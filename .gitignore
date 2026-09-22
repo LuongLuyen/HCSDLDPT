@@ -1,0 +1,24 @@
+# Môi trường ảo Python
+venv/
+.venv/
+env/
+
+# Python cache / build
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Dữ liệu audio tải về (nặng, hàng trăm MB) -- vẫn giữ lại manifest_500.csv
+engine_sounds_500/audio/
+
+# CSDL SQLite sinh ra khi chạy build_database.py
+engine_sounds.db
+
+# File tạm của Word / hệ điều hành / log
+.~*.docx
+.DS_Store
+*.log
+
+# Cấu hình công cụ phát triển cục bộ
+.commandcode/
