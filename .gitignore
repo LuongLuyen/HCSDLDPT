@@ -1,28 +1,28 @@
-# Môi trường ảo Python
-venv/
-.venv/
-env/
-
-# Python cache / build
-__pycache__/
-*.py[cod]
-*.egg-info/
-.pytest_cache/
-
-# File WAV (nặng ~700MB) -- copy tay qua USB, không push git.
-# Chỉ theo dõi DanhSach.csv; demo vẫn tìm kiếm được nhờ vector trong DB.
-dataset/audio/*.wav
-
-# CSDL SQLite đi kèm (nhẹ) -- GIỮ LẠI để demo chạy ngay.
-
-# File tạm của Word / Excel / hệ điều hành / log
-~$*.docx
-*.xlsx
-.DS_Store
-*.log
-
-# Cấu hình công cụ phát triển cục bộ
-.commandcode/
+# Môi trường ảo Python
+venv/
+.venv/
+env/
+
+# Python cache / build
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# File WAV (nặng ~700MB) -- copy tay qua USB, không push git.
+# Chỉ theo dõi DanhSach.csv; demo vẫn tìm kiếm được nhờ vector trong DB.
+dataset/audio/*.wav
+
+# CSDL SQLite đi kèm (nhẹ) -- GIỮ LẠI để demo chạy ngay.
+
+# File tạm của Word / Excel / hệ điều hành / log
+~$*.docx
+*.xlsx
+.DS_Store
+*.log
+
+# Cấu hình công cụ phát triển cục bộ
+.commandcode/
 
 # Cau hinh editor cuc bo
-.vscode/
+.vscode/
