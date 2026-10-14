@@ -1,21 +1,20 @@
 """
 search.py
 =========
-Hệ tìm kiếm tương đồng, bám sát công thức Lecture 7 - Vector space
-database and Clustering:
+Hệ tìm kiếm tương đồng theo mô hình không gian vector:
 
-  - Dot product        : S(Di,Qj) = sum_k Di_k * Qj_k                (slide 6)
-  - Cosine similarity   : S = (Di . Qj) / (|Di| * |Qj|)               (slide 8)
-  - L2 / Euclidean dist : L2(Di,Dj) = sqrt(sum_k (dik - djk)^2)       (slide 22)
+  - Dot product        : S(Di,Qj) = sum_k Di_k * Qj_k
+  - Cosine similarity   : S = (Di . Qj) / (|Di| * |Qj|)
+  - L2 / Euclidean dist : L2(Di,Dj) = sqrt(sum_k (dik - djk)^2)
   - Clustered search    : K-means trước, chỉ probe các cluster gần nhất
-    để tăng tốc (slide "Querying Clustered Vector Data")
+    để tăng tốc (truy vấn trên dữ liệu đã phân cụm)
 
 Đặc trưng ở đây có thang đo rất khác nhau (E ~ 0.1, centroid ~ 2000Hz,
 MFCC ~ -100..50) nên BẮT BUỘC chuẩn hóa (z-score) trước khi tính
 similarity -- nếu không đặc trưng có biên độ lớn (centroid, MFCC) sẽ
-lấn át các đặc trưng khác. Đây là mở rộng thực tế cho nhược điểm đã
-nêu trong Lecture 7 slide 12: "vector-space query model không tính đến
-sự khác biệt về ý nghĩa giữa các thuộc tính".
+lấn át các đặc trưng khác. Chuẩn hóa cũng khắc phục nhược điểm của mô hình
+truy vấn không gian vector thuần túy: không tính đến sự khác biệt về ý nghĩa
+giữa các thuộc tính.
 """
 
 import numpy as np
@@ -30,7 +29,7 @@ class EngineSoundIndex:
         self.vectors_norm = (vectors - self.mean) / self.std   # z-score chuẩn hóa
         self.kmeans = None
 
-    # ---------- độ đo tương đồng / khoảng cách (Lecture 7) ----------
+    # ---------- độ đo tương đồng / khoảng cách ----------
     @staticmethod
     def dot_product(d, q):
         return np.dot(d, q)
@@ -72,12 +71,12 @@ class EngineSoundIndex:
         order = np.argsort(scores)[::-1][:top_k]
         return [(self.meta[i], scores[i]) for i in order]
 
-    # ---------- clustering (Lecture 7: K-means / Querying Clustered Vector Data) ----------
+    # ---------- clustering (K-means / truy vấn trên cụm) ----------
     def build_clusters(self, n_clusters=8, random_state=42):
         """
-        n_clusters=8 mặc định vì dataset có đúng 8 'loại động cơ' (set A-H)
-        -- kỳ vọng K-means sẽ tự nhiên tách theo loại động cơ (Lecture 7:
-        'Cluster centroids có thể dùng làm index entry points').
+        n_clusters=8 mặc định vì dataset có đúng 8 nhóm động cơ (A-H)
+        -- kỳ vọng K-means sẽ tự nhiên tách theo nhóm (centroid cụm
+        đóng vai trò điểm vào chỉ mục).
         """
         self.kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
         self.cluster_labels = self.kmeans.fit_predict(self.vectors_norm)
@@ -85,8 +84,8 @@ class EngineSoundIndex:
 
     def query_clustered(self, q_raw, top_k=5, n_probe=2, metric="cosine"):
         """
-        Bước 1: tính khoảng cách từ Q đến n_probe centroid gần nhất (multi-probe,
-                slide "Querying Clustered Vector Data" -- tránh bỏ sót biên giới).
+        Bước 1: tính khoảng cách từ Q đến n_probe centroid gần nhất (multi-probe
+                -- tránh bỏ sót bản ghi nằm gần biên giới giữa các cụm).
         Bước 2: chỉ tính similarity chi tiết với các điểm trong các cluster đó.
         """
         if self.kmeans is None:

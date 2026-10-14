@@ -2,22 +2,27 @@
 database.py
 ============
 Xây dựng CSDL SQLite quản trị đặc trưng âm thanh, theo đúng mô hình
-phân lớp metadata của Lecture 9 (Multimedia Metadata, slide 13-14:
-Technical / Descriptive / Structural metadata) và cấu trúc bảng
-"FeatureVector table" của Lecture 12 (Keyframe Index Structure, slide 18,
+phân lớp metadata đa phương tiện (technical / descriptive / structural)
+và cấu trúc bảng "FeatureVector table" (lưu 1 vector mỗi bản ghi audio,
 áp dụng tương tự cho audio thay vì video keyframe).
 
 3 bảng:
   AudioFile      : technical metadata  (đường dẫn, thời lượng, sample rate...)
-  EngineMetadata : descriptive metadata (loại động cơ = set A-H, trạng thái,
-                   RPM/Torque ground-truth từ manifest_500.csv)
-  FeatureVector  : vector index 39-chiều (Lecture 7: "vector space database")
+  EngineMetadata : descriptive metadata (nhóm động cơ A-H, trạng thái,
+                   RPM/Torque ground-truth với nhóm có nhãn)
+   FeatureVector  : vector index 39-chiều ("vector space database")
 """
 
 import sqlite3
 import numpy as np
 import json
 from feature_extraction import FEATURE_NAMES
+
+try:
+    from engine_labels import get_label
+except ImportError:
+    def get_label(x):
+        return x
 
 DB_PATH = "engine_sounds.db"
 
@@ -84,8 +89,8 @@ def insert_audio_record(conn, filepath, filename, duration_sec, samplerate,
 def load_all_vectors(conn):
     """
     Trả về: audiooids (list), matrix (n_files x 39 numpy array), metadata (list of dict)
-    -- đây chính là bảng dữ liệu dùng cho vector-space query ở Lecture 7
-    (Di = [Ti1..TiN], slide 4).
+    -- đây chính là bảng dữ liệu dùng cho truy vấn không gian vector
+    (Di = [Ti1..TiN]).
     """
     cur = conn.cursor()
     cur.execute("""
@@ -105,7 +110,8 @@ def load_all_vectors(conn):
         vectors.append(json.loads(vjson))
         meta.append({
             "audiooid": audiooid, "filepath": filepath, "filename": filename,
-            "engine_set": engine_set, "state_label": state_label,
+            "engine_set": engine_set, "engine_label": get_label(engine_set),
+            "state_label": state_label,
             "rpm_mean": rpm_mean, "torque_mean": torque_mean,
         })
     return audiooids, np.array(vectors), meta

@@ -1,8 +1,8 @@
 """
 evaluate.py
 ===========
-Đánh giá hệ thống tìm kiếm, dùng đúng định nghĩa Precision/Recall
-ở Lecture 8 - Text indexing and Boolean query model, slide 11:
+Đánh giá hệ thống tìm kiếm theo đúng định nghĩa Precision/Recall chuẩn
+của mô hình lập chỉ mục và truy vấn Boolean:
 
     Precision = |relevant giao retrieved| / |retrieved|
     Recall    = |relevant giao retrieved| / |relevant|
@@ -13,8 +13,8 @@ manifest (KHÔNG cần gán nhãn tay):
     - |rpm_mean(candidate) - rpm_mean(query)| <= RPM_TOLERANCE
       (cùng 'trạng thái làm việc' ở mức độ gần)
 
-Script so sánh nhiều cấu hình (Lecture 7 gợi ý so sánh độ đo khác nhau,
-slide 10 bài tập "Rank documents by dot product vs by cosine"):
+Script so sánh nhiều cấu hình độ đo khác nhau (xếp hạng theo dot product
+so với cosine, và khoảng cách Euclid):
     (a) full 39 đặc trưng, metric=cosine
     (b) chỉ MFCC (26 chiều), metric=cosine
     (c) full 39 đặc trưng, metric=l2 (Euclidean)
@@ -31,7 +31,10 @@ def is_relevant(meta_query, meta_candidate, rpm_tol=RPM_TOLERANCE):
     if meta_candidate["audiooid"] == meta_query["audiooid"]:
         return False  # không tính chính nó là kết quả "tìm thấy"
     same_set = meta_candidate["engine_set"] == meta_query["engine_set"]
-    close_rpm = abs((meta_candidate["rpm_mean"] or 0) - (meta_query["rpm_mean"] or 0)) <= rpm_tol
+    rq, rc = meta_query.get("rpm_mean"), meta_candidate.get("rpm_mean")
+    if rq is None or rc is None:
+        return same_set  # data moi khong co RPM -> relevant = cung nhom
+    close_rpm = abs(rc - rq) <= rpm_tol
     return same_set and close_rpm
 
 

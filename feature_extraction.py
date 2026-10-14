@@ -1,13 +1,14 @@
 """
 feature_extraction.py
 ======================
-Trích rút đặc trưng âm thanh tiếng động cơ, bám sát công thức trong
-Lecture 10 - Indexing and Retrieval for Audio (slide 8-27).
+Trích rút đặc trưng âm thanh tiếng động cơ theo pipeline trích đặc trưng audio
+chuẩn (tiền xử lý → chia khung → đặc trưng miền thời gian → STFT/đặc trưng
+miền tần số → tổng hợp mức segment).
 
-Pipeline (dùng slide "Audio Feature Extraction Pipeline", trang 8):
+Pipeline:
   1. Preprocessing : decode -> mono PCM -> resample chuẩn (ở đây dùng 22050 Hz,
      đủ cho dải tần động cơ ~ 20kHz theo Nyquist)
-  2. Framing       : chia frame 25ms, hop 10ms (đúng như slide)
+  2. Framing       : chia frame 25ms, hop 10ms (chuẩn phân tích ngắn hạn)
   3. Time-domain   : E, ZCR, silence ratio  -> tính trên từng frame
   4. Frequency-domain (qua STFT): spectral centroid, bandwidth,
      harmonicity, f0 (pitch/RPM proxy), MFCC(13)
@@ -23,12 +24,12 @@ và annotation (dùng làm ground-truth đánh giá, KHÔNG đưa vào vector).
 import numpy as np
 import librosa
 
-SR = 22050          # sample rate chuẩn hóa (slide: 16kHz cho speech, 44.1kHz cho music;
+SR = 22050          # sample rate chuẩn hóa (16kHz cho speech, 44.1kHz cho music;
                      # động cơ là "noise" nên chọn mức trung gian, đủ băng thông cho hai)
-FRAME_MS = 25        # độ dài frame (giống slide)
-HOP_MS = 10           # bước nhảy frame (giống slide)
+FRAME_MS = 25        # độ dài frame chuẩn phân tích ngắn hạn
+HOP_MS = 10           # bước nhảy frame chuẩn phân tích ngắn hạn
 N_FFT = 2048
-N_MFCC = 13           # dùng 13 hệ số MFCC như slide nêu
+N_MFCC = 13           # dùng 13 hệ số MFCC chuẩn
 
 
 # ---------------------------------------------------------------------
@@ -64,7 +65,7 @@ def load_engine_audio(path, sr=SR):
 
 
 # ---------------------------------------------------------------------
-# 1. Đặc trưng miền thời gian  (slide 11-14)
+# 1. Đặc trưng miền thời gian
 # ---------------------------------------------------------------------
 def frame_signal(x, sr=SR, frame_ms=FRAME_MS, hop_ms=HOP_MS):
     frame_len = int(sr * frame_ms / 1000)
@@ -74,12 +75,12 @@ def frame_signal(x, sr=SR, frame_ms=FRAME_MS, hop_ms=HOP_MS):
 
 
 def average_energy(frames):
-    """ E = (1/N) * sum(x(n)^2)   -- slide 11 """
+    """ E = (1/N) * sum(x(n)^2) """
     return np.mean(frames ** 2, axis=1)
 
 
 def zero_crossing_rate(frames):
-    """ ZCR = (1/2N) * sum |sgn(x(n)) - sgn(x(n-1))|   -- slide 11 """
+    """ ZCR = (1/2N) * sum |sgn(x(n)) - sgn(x(n-1))| """
     sgn = np.sign(frames)
     sgn[sgn == 0] = 0
     diff = np.abs(np.diff(sgn, axis=1))
@@ -89,9 +90,9 @@ def zero_crossing_rate(frames):
 
 def silence_ratio(x, sr=SR, amp_thresh=None, min_silence_ms=50):
     """
-    Silence: |x[n]| < A_thresh liên tục >= T_min mẫu (slide 12,14).
+    Silence: |x[n]| < A_thresh liên tục >= T_min mẫu.
     A_thresh: ngưỡng tương đối = 5% biên độ RMS toàn file nếu không truyền vào.
-    Trả về: tỷ lệ thời gian im lặng / tổng thời gian file (slide ví dụ: 8/60 = 0.133)
+    Trả về: tỷ lệ thời gian im lặng / tổng thời gian file (ví dụ: 8/60 = 0.133)
     """
     if amp_thresh is None:
         amp_thresh = 0.05 * np.sqrt(np.mean(x ** 2))
@@ -115,7 +116,7 @@ def silence_ratio(x, sr=SR, amp_thresh=None, min_silence_ms=50):
 
 
 # ---------------------------------------------------------------------
-# 2. Đặc trưng miền tần số  (slide 16-23)
+# 2. Đặc trưng miền tần số
 # ---------------------------------------------------------------------
 def stft_magnitude(x, sr=SR, n_fft=N_FFT, hop_ms=HOP_MS):
     hop_len = int(sr * hop_ms / 1000)
@@ -125,7 +126,7 @@ def stft_magnitude(x, sr=SR, n_fft=N_FFT, hop_ms=HOP_MS):
 
 
 def spectral_centroid(S, freqs):
-    """ SC = sum(f_k * |X(k)|) / sum(|X(k)|)   -- slide 20 (độ 'sáng' / brightness) """
+    """ SC = sum(f_k * |X(k)|) / sum(|X(k)|)  (độ 'sáng' / brightness) """
     num = np.sum(freqs[:, None] * S, axis=0)
     den = np.sum(S, axis=0) + 1e-10
     return num / den
@@ -134,7 +135,7 @@ def spectral_centroid(S, freqs):
 def spectral_bandwidth(S, freqs, db_thresh=3.0):
     """
     Bandwidth = hiệu giữa tần số cao nhất và thấp nhất của thành phần phổ dương,
-    'dương' được định nghĩa là lớn hơn ngưỡng khoảng 3dB trên mức im lặng -- slide 19.
+    'dương' được định nghĩa là lớn hơn ngưỡng khoảng 3dB trên mức im lặng.
     Tính trên phổ trung bình toàn file cho đơn giản, trả về 1 giá trị/frame.
     """
     ref = S.max(axis=0, keepdims=True) + 1e-10
@@ -150,10 +151,9 @@ def spectral_bandwidth(S, freqs, db_thresh=3.0):
 def harmonicity_and_f0(x, sr=SR, hop_ms=HOP_MS, fmin=30, fmax=2000):
     """
     Ước lượng f0 (tần số cơ bản, liên hệ trực tiếp RPM/60 x số xy-lanh) bằng thuật toán
-    YIN (slide 21: 'Pitch (f0): fundamental frequency from autocorrelation, cepstrum, or
-    YIN algorithm'). Harmonicity = tỷ lệ năng lượng tập trung ở các bội số f,2f,3f...
-    (slide 22: 'spectral components mostly consist of the coefficients of the lowest
-    frequency ... f, 2f, 3f, 4f').
+    YIN (dựa trên autocorrelation). Harmonicity = tỷ lệ năng lượng tập trung ở các
+    bội số f, 2f, 3f... (các thành phần phổ chủ yếu gồm các hệ số của tần số thấp nhất
+    và các bội của nó: f, 2f, 3f, 4f).
     """
     hop_len = int(sr * hop_ms / 1000)
     f0 = librosa.yin(x, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop_len)
@@ -177,7 +177,7 @@ def harmonicity_and_f0(x, sr=SR, hop_ms=HOP_MS, fmin=30, fmax=2000):
 
 def mfcc_features(x, sr=SR, n_mfcc=N_MFCC, hop_ms=HOP_MS):
     """
-    MFCC theo đúng quy trình slide 21: STFT -> Mel filter bank -> log -> DCT -> 13 hệ số/frame
+    MFCC theo đúng quy trình chuẩn: STFT -> Mel filter bank -> log -> DCT -> 13 hệ số/frame
     """
     hop_len = int(sr * hop_ms / 1000)
     mfcc = librosa.feature.mfcc(y=x, sr=sr, n_mfcc=n_mfcc, hop_length=hop_len)
@@ -185,7 +185,7 @@ def mfcc_features(x, sr=SR, n_mfcc=N_MFCC, hop_ms=HOP_MS):
 
 
 # ---------------------------------------------------------------------
-# 3. Aggregation -> vector đặc trưng mức segment (slide 8: "Aggregation")
+# 3. Aggregation -> vector đặc trưng mức segment
 # ---------------------------------------------------------------------
 FEATURE_NAMES = (
     ["E_mean", "E_std", "ZCR_mean", "ZCR_std", "silence_ratio"] +

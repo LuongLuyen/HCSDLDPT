@@ -2,7 +2,7 @@
 app_demo.py
 ===========
 Demo giao diện Streamlit, tái hiện đúng sơ đồ khối "Online query phase"
-của Lecture 10 (CBAR Framework, slide 5):
+của khung truy hồi audio theo nội dung (CBAR):
 
     query (audio clip) -> extract features -> similarity search -> ranked results
 
@@ -36,8 +36,8 @@ def load_index(db_path):
 st.set_page_config(page_title="Tìm kiếm tiếng động cơ", layout="wide")
 st.title("Hệ thống tìm kiếm tiếng động cơ tương đồng")
 st.caption(
-    "Kiến trúc: Preprocessing -> Trích đặc trưng (39 chiều, Lecture 10) "
-    "-> So sánh tương đồng (cosine/L2, Lecture 7) -> Top-5 kết quả"
+    "Kiến trúc: Preprocessing -> Trích đặc trưng (39 chiều) "
+    "-> So sánh tương đồng (cosine/L2) -> Top-5 kết quả"
 )
 
 index = load_index(DB_PATH)
@@ -74,7 +74,7 @@ if uploaded is not None:
         cols = st.columns([1, 3, 2, 2, 2])
         cols[0].markdown(f"**#{rank}**")
         cols[1].write(meta["filename"])
-        cols[2].write(f"Loại động cơ: {meta['engine_set']}")
+        cols[2].write(f"Loại động cơ: {meta.get('engine_label', meta['engine_set'])}")
         cols[3].write(f"Trạng thái: {meta.get('state_label', '-')}")
         cols[4].write(f"Score: {score:.4f}")
         try:

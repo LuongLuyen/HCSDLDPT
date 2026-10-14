@@ -9,16 +9,20 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
-# Dữ liệu audio tải về (nặng, hàng trăm MB) -- vẫn giữ lại manifest_500.csv
-engine_sounds_500/audio/
+# File WAV (nặng ~700MB) -- copy tay qua USB, không push git.
+# Chỉ theo dõi DanhSach.csv; demo vẫn tìm kiếm được nhờ vector trong DB.
+dataset/audio/*.wav
 
-# CSDL SQLite sinh ra khi chạy build_database.py
-engine_sounds.db
+# CSDL SQLite đi kèm (nhẹ) -- GIỮ LẠI để demo chạy ngay.
 
-# File tạm của Word / hệ điều hành / log
-.~*.docx
+# File tạm của Word / Excel / hệ điều hành / log
+~$*.docx
+*.xlsx
 .DS_Store
 *.log
 
 # Cấu hình công cụ phát triển cục bộ
 .commandcode/
+
+# Cau hinh editor cuc bo
+.vscode/
